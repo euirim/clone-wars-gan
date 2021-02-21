@@ -1,20 +1,22 @@
+from tqdm import tqdm
 import ffmpeg
 import os
 from fractions import Fraction
 import uuid
 
-INPUT_DIR = '/mnt/e/star_wars_gan_data'
-OUTPUT_DIR = '/mnt/e/star_wars_gan_data/frames'
-START_CUT = 40 # seconds
-END_CUT = 60 # seconds
-END_EXCEPTIONS = {'S07e12': 165, 'S07e07': 195}
+INPUT_DIR = "/home/euirim/Downloads/SWTCW"
+OUTPUT_DIR = "./data/full"
+START_CUT = 20  # seconds
+END_CUT = 60  # seconds
+END_EXCEPTIONS = {"S07e12": 165, "S07e07": 195}
 START_EXCEPTIONS = {}
 FPS = 1
 
 files = []
-for file in os.listdir(INPUT_DIR):
-    if file.endswith(".mp4"):
-        files.append(f"{INPUT_DIR}/{file}")
+for root, _, filenames in os.walk(INPUT_DIR):
+    for filename in filenames:
+        if filename.endswith(".mp4"):
+            files.append(os.path.join(root, filename))
 
 if not os.path.exists(OUTPUT_DIR):
     os.mkdir(OUTPUT_DIR)
@@ -47,7 +49,7 @@ def process(file_name, start=START_CUT, end=END_CUT):
     vd = VideoData.get(file_name)
     start_cut_frames = int(vd.fps * start)
     end_cut_frames = int(vd.fps * end)
-    out_filename = f'{OUTPUT_DIR}/%d_{tag}.jpg'
+    out_filename = f"{OUTPUT_DIR}/%d_{tag}.jpg"
 
     ffmpeg.input(file_name).trim(
         start_frame=start_cut_frames, end_frame=vd.frames - end_cut_frames
@@ -57,12 +59,12 @@ def process(file_name, start=START_CUT, end=END_CUT):
 
 
 def postprocess():
-    for file in os.listdir(OUTPUT_DIR):
+    for file in tqdm(os.listdir(OUTPUT_DIR)):
         h = uuid.uuid4().hex
         os.rename(f"{OUTPUT_DIR}/{file}", f"{OUTPUT_DIR}/{h}_{file}")
 
 
-for f in files[::-1]:
+for f in tqdm(files[::-1]):
     start, end = START_CUT, END_CUT
     for exc, tmp in END_EXCEPTIONS.items():
         if exc.lower() in f.lower():
@@ -73,7 +75,6 @@ for f in files[::-1]:
             start = tmp
             break
 
-    print(f'Processing {f} [start_cut={start},end_cut={end}]...')
     process(f, start=start, end=end)
 
 print("Postprocessing...")
