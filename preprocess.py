@@ -5,8 +5,10 @@ import uuid
 
 INPUT_DIR = '/mnt/e/star_wars_gan_data'
 OUTPUT_DIR = '/mnt/e/star_wars_gan_data/frames'
-START_CUT = 60 # seconds
-END_CUT = 120 # seconds
+START_CUT = 40 # seconds
+END_CUT = 60 # seconds
+END_EXCEPTIONS = {'S07e12': 165, 'S07e07': 195}
+START_EXCEPTIONS = {}
 FPS = 1
 
 files = []
@@ -32,12 +34,12 @@ class VideoData:
                 float(Fraction(video_stream['r_frame_rate'])),
                 int(video_stream['nb_frames']))
 
-def process(file_name):
+def process(file_name, start=START_CUT, end=END_CUT):
     tag = os.path.splitext(os.path.basename(file_name))[0]
     tag = tag.replace(' ', '_')
     vd = VideoData.get(file_name)
-    start_cut_frames = int(vd.fps * START_CUT)
-    end_cut_frames = int(vd.fps * END_CUT)
+    start_cut_frames = int(vd.fps * start)
+    end_cut_frames = int(vd.fps * end)
     out_filename = f'{OUTPUT_DIR}/%d_{tag}.jpg'
 
     ffmpeg \
@@ -53,8 +55,18 @@ def postprocess():
         os.rename(f'{OUTPUT_DIR}/{file}', f'{OUTPUT_DIR}/{h}_{file}')
 
 for f in files[::-1]:
-    print(f'Processing {f}...')
-    process(f)
+    start, end = START_CUT, END_CUT
+    for exc, tmp in END_EXCEPTIONS.items():
+        if exc.lower() in f.lower():
+            end = tmp
+            break
+    for exc, tmp in START_EXCEPTIONS.items():
+        if exc.lower() in f.lower():
+            start = tmp
+            break
+
+    print(f'Processing {f} [start_cut={start},end_cut={end}]...')
+    process(f, start=start, end=end)
 
 print('Postprocessing...')
 postprocess()
