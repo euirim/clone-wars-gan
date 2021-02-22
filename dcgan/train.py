@@ -1,3 +1,4 @@
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -24,7 +25,7 @@ params = {
     "nz": 100,  # Size of the Z latent vector (the input to the generator).
     "ngf": 64,  # Size of feature maps in the generator. The depth will be multiples of this.
     "ndf": 64,  # Size of features maps in the discriminator. The depth will be multiples of this.
-    "nepochs": 5,  # Number of training epochs.
+    "nepochs": 25,  # Number of training epochs.
     "lr": 0.0002,  # Learning rate for optimizers
     "beta1": 0.5,  # Beta1 hyperparam for Adam optimizer
     "save_epoch": 2,
@@ -95,7 +96,7 @@ print("Starting Training Loop...")
 print("-" * 25)
 
 for epoch in range(params["nepochs"]):
-    for i, data in enumerate(dataloader, 0):
+    for i, data in enumerate(tqdm(dataloader), 0):
         # Transfer data tensor to GPU/CPU (device)
         real_data = data[0].to(device)
         # Get batch size. Can be different from params['nbsize'] for last batch in epoch.
@@ -157,7 +158,7 @@ for epoch in range(params["nepochs"]):
         optimizerG.step()
 
         # Check progress of training.
-        if i % 50 == 0:
+        if i % 100 == 0:
             print(f"CUDA Available: {torch.cuda.is_available()}")
             print(
                 "[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f"
