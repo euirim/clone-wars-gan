@@ -130,5 +130,8 @@ dmypy.json
 
 .vscode/settings.json
 data/*
-dcgan/model/*
-!dcgan/model/.gitkeep
+
+*/logs/*
+!*/logs/.gitkeep
+*/model/*
+!*/model/.gitkeep
