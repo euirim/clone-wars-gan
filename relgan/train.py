@@ -1,3 +1,7 @@
+"""
+Inspired by
+https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/relativistic_gan/relativistic_gan.py
+"""
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -13,7 +17,7 @@ from utils import get_dataloader
 from relgan import Generator, Discriminator
 
 # Set random seed for reproducibility.
-seed = 369
+seed = 66
 random.seed(seed)
 torch.manual_seed(seed)
 print("Random Seed: ", seed)
@@ -26,7 +30,7 @@ params = {
     "nz": 100,  # Size of the Z latent vector (the input to the generator).
     "ngf": 64,  # Size of feature maps in the generator. The depth will be multiples of this.
     "ndf": 64,  # Size of features maps in the discriminator. The depth will be multiples of this.
-    "nepochs": 25,  # Number of training epochs.
+    "nepochs": 20,  # Number of training epochs.
     "lr": 0.0002,  # Learning rate for optimizers
     "beta1": 0.5,  # Beta1 hyperparam for Adam optimizer
     "beta2": 0.999,  # Beta2 hyperparam for Adam optimizer
