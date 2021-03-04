@@ -24,14 +24,14 @@ print("Random Seed: ", seed)
 
 # Parameters to define the model.
 params = {
-    "bsize": 64,  # Batch size during training.
-    "img_size": 128,  # Spatial size of training images. All images will be resized to this size during preprocessing.
+    "bsize": 32,  # Batch size during training.
+    "img_size": 256,  # Spatial size of training images. All images will be resized to this size during preprocessing.
     "nc": 3,  # Number of channles in the training images. For coloured images this is 3.
-    "nz": 100,  # Size of the Z latent vector (the input to the generator).
-    "ngf": 64,  # Size of feature maps in the generator. The depth will be multiples of this.
-    "ndf": 64,  # Size of features maps in the discriminator. The depth will be multiples of this.
+    "nz": 128,  # Size of the Z latent vector (the input to the generator).
+    # "ngf": 64,  # Size of feature maps in the generator. The depth will be multiples of this.
+    # "ndf": 64,  # Size of features maps in the discriminator. The depth will be multiples of this.
     "nepochs": 20,  # Number of training epochs.
-    "lr": 0.0002,  # Learning rate for optimizers
+    "lr": 0.0001,  # Learning rate for optimizers
     "beta1": 0.5,  # Beta1 hyperparam for Adam optimizer
     "beta2": 0.999,  # Beta2 hyperparam for Adam optimizer
     "rel_avg_gan": True,  # Use a relativistic average GAN instead of a standard GAN
@@ -53,7 +53,7 @@ plt.title("Training Images")
 plt.imshow(
     np.transpose(
         vutils.make_grid(
-            sample_batch[0].to(device)[:64], padding=2, normalize=True
+            sample_batch[0].to(device)[:64], padding=2, normalize=True,
         ).cpu(),
         (1, 2, 0),
     )
@@ -88,7 +88,8 @@ writer = SummaryWriter(log_dir="./logs")
 img_list = []
 
 batches_trained = 0
-for epoch in range(params["nepochs"]):
+for epoch in range(1, params["nepochs"] + 1):
+    print(f"* Epoch {epoch}")
     for i, data in enumerate(tqdm(dataloader), 0):
         real_data = data[0].to(device)
 
@@ -200,4 +201,4 @@ plt.axis("off")
 ims = [[plt.imshow(np.transpose(i, (1, 2, 0)), animated=True)] for i in img_list]
 anim = animation.ArtistAnimation(fig, ims, interval=1000, repeat_delay=1000, blit=True)
 plt.show()
-anim.save("celeba.gif", dpi=80, writer="imagemagick")
+anim.save("celeba.gif", dpi=300, writer="imagemagick")
