@@ -3,7 +3,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as dset
 
 # Directory containing the data.
-root = "../data/full"
+root = "../data/sample"
 
 
 def get_dataloader(params):

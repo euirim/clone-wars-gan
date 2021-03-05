@@ -1,6 +1,8 @@
 """
 Inspired by
 https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/relativistic_gan/relativistic_gan.py
+
+Lots of bugs in the above version that needed to be fixed.
 """
 from tqdm import tqdm
 import torch
@@ -31,7 +33,7 @@ params = {
     # "ngf": 64,  # Size of feature maps in the generator. The depth will be multiples of this.
     # "ndf": 64,  # Size of features maps in the discriminator. The depth will be multiples of this.
     "nepochs": 20,  # Number of training epochs.
-    "lr": 0.0001,  # Learning rate for optimizers
+    "lr": 0.0002,  # Learning rate for optimizers
     "beta1": 0.5,  # Beta1 hyperparam for Adam optimizer
     "beta2": 0.999,  # Beta2 hyperparam for Adam optimizer
     "rel_avg_gan": True,  # Use a relativistic average GAN instead of a standard GAN
@@ -116,13 +118,20 @@ for epoch in range(1, params["nepochs"] + 1):
         fake_pred = disc(fake_imgs)
 
         if params["rel_avg_gan"]:
-            gen_loss = adversarial_loss(
-                fake_pred - real_pred.mean(0, keepdim=True), valid
-            )
+            # 1
+            gen_loss = (
+                adversarial_loss(real_pred - fake_pred.mean(0, keepdim=True), fake)
+                + adversarial_loss(fake_pred - real_pred.mean(0, keepdim=True), valid)
+            ) / 2
+
+            # 2
+            # gen_loss = adversarial_loss(
+            #     fake_pred - real_pred.mean(0, keepdim=True), valid
+            # )
         else:
             gen_loss = adversarial_loss(fake_pred - real_pred, valid)
 
-        gen_loss = adversarial_loss(disc(fake_imgs), valid)
+        # gen_loss = adversarial_loss(disc(fake_imgs), valid)
         gen_loss.backward()
         gen_opt.step()
 
