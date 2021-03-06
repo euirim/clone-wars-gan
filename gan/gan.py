@@ -1,5 +1,5 @@
 """
-Adapted from https://github.com/pytorch/examples/issues/70
+Adapted from https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
 """
 from torch import nn
 
@@ -82,7 +82,7 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (params["ndf"]*16) x 4 x 4
             nn.Conv2d(params["ndf"] * 16, 1, 4, stride=1, padding=0, bias=False),
-            nn.Sigmoid(),
+            # nn.Sigmoid(),
             # state size. 1
         )
 

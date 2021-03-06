@@ -1,5 +1,3 @@
-import os
-
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -9,7 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from torch.utils.tensorboard import SummaryWriter
-import random
+
+from config import PARAMS as params
+from config import DEVICE as device
 
 from utils import get_dataloader
 from gan import Generator, Discriminator
@@ -26,30 +26,6 @@ def weights_init(m):
         nn.init.constant_(m.bias.data, 0)
 
 
-# Set random seed for reproducibility.
-seed = 66
-random.seed(seed)
-torch.manual_seed(seed)
-
-# Parameters to define the model.
-params = {
-    "bsize": 64,  # Batch size during training.
-    "img_size": 128,  # Spatial size of training images. All images will be resized to this size during preprocessing.
-    "nc": 3,  # Number of channles in the training images. For coloured images this is 3.
-    "nz": 100,  # Size of the Z latent vector (the input to the generator).
-    "ngf": 64,  # Size of feature maps in the generator. The depth will be multiples of this.
-    "ndf": 64,  # Size of features maps in the discriminator. The depth will be multiples of this.
-    "nepochs": 1,  # Number of training epochs.
-    "lr": 0.0002,  # Learning rate for optimizers
-    "beta1": 0.5,  # Beta1 hyperparam for Adam optimizer
-    "beta2": 0.999,  # Beta2 hyperparam for Adam optimizer
-    "rel_avg_gan": True,  # Use a relativistic average GAN instead of a standard GAN
-    "save_epoch": 2,
-    "num_dataloader_workers": os.cpu_count() // 2,
-}  # Save step.
-
-# Use GPU is available else use CPU.
-device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
 print(device, " used.")
 
 # Configure dataloader
@@ -85,7 +61,7 @@ disc = Discriminator(params).to(device)
 disc.apply(weights_init)
 
 # Binary Cross Entropy Loss
-criterion = nn.BCELoss().to(device)
+criterion = nn.BCEWithLogitsLoss().to(device)
 
 # Optimizers
 gen_opt = optim.Adam(
@@ -109,9 +85,9 @@ for epoch in range(1, params["nepochs"] + 1):
     print(f"* Epoch {epoch}")
     for i, data in enumerate(tqdm(dataloader), 0):
         # Get data and transfer to GPU/CPU
-        real_data = data[0].to(device)
+        real_imgs = data[0].to(device)
         # Get batch size (can be different than params for last batch)
-        batch_size = real_data.size(0)
+        batch_size = real_imgs.size(0)
 
         #################
         # Train Discriminator
@@ -119,20 +95,14 @@ for epoch in range(1, params["nepochs"] + 1):
 
         disc.zero_grad()
         # Create labels for the real data. (label=1)
-        label = torch.full((batch_size,), real_label, device=device).float()
-        output = disc(real_data).view(-1)
-
-        # Calculate loss
-        disc_real_loss = criterion(output, label)
-        # Backprop
-        disc_real_loss.backward()
+        real_labels = torch.full((batch_size,), real_label, device=device).float()
+        fake_labels = torch.full((batch_size,), fake_label, device=device).float()
+        y_real = disc(real_imgs).view(-1)
 
         # Sample random data from a unit normal distribution.
         noise = torch.randn(batch_size, params["nz"], 1, 1, device=device)
         # Generate fake data (images).
-        fake_data = gen(noise)
-        # Create labels for fake data. (label=0)
-        label.fill_(fake_label)
+        fake_imgs = gen(noise)
 
         # Calculate the output of the discriminator of the fake data.
         # As no gradients w.r.t. the generator parameters are to be
@@ -140,13 +110,15 @@ for epoch in range(1, params["nepochs"] + 1):
         # discriminator parameters will be calculated.
         # This is done because the loss functions for the discriminator
         # and the generator are slightly different.
-        output = disc(fake_data.detach()).view(-1)
-        disc_fake_loss = criterion(output, label)
-        # Backprop
-        disc_fake_loss.backward()
+        y_fake = disc(fake_imgs.detach()).view(-1)
 
         # Net discriminator loss.
-        disc_loss = disc_real_loss + disc_fake_loss
+        disc_loss = (
+            criterion(y_real - torch.mean(y_fake), real_labels)
+            + criterion(y_fake - torch.mean(y_real), fake_labels)
+        ) / 2
+        # Backprop
+        disc_loss.backward()
         # Update discriminator parameters.
         disc_opt.step()
 
@@ -156,14 +128,12 @@ for epoch in range(1, params["nepochs"] + 1):
 
         # Make accumalted gradients of the generator zero.
         gen.zero_grad()
-        # We want the fake data to be classified as real. Hence
-        # real_label are used. (label=1)
-        label.fill_(real_label)
-        # No detach() is used here as we want to calculate the gradients w.r.t.
-        # the generator this time.
-        # print("FAKE DATA SHAPE", fake_data.shape)
-        output = disc(fake_data).view(-1)
-        gen_loss = criterion(output, label)
+        y_real = disc(real_imgs).view(-1)  # necessary to avoid gradient problems
+        y_fake = disc(fake_imgs).view(-1)
+        gen_loss = (
+            criterion(y_real - torch.mean(y_fake), fake_labels)
+            + criterion(y_fake - torch.mean(y_real), real_labels)
+        ) / 2
         # Gradients for backpropagation are calculated.
         # Gradients w.r.t. both the generator and the discriminator
         # parameters are calculated, however, the generator's optimizer

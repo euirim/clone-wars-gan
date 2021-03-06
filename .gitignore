@@ -137,3 +137,4 @@ data/*
 !*/model/.gitkeep
 */outputs/*
 celeba.gif
+*/fid/*
