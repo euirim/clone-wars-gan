@@ -26,8 +26,8 @@ print("Random Seed: ", seed)
 
 # Parameters to define the model.
 params = {
-    "bsize": 32,  # Batch size during training.
-    "img_size": 256,  # Spatial size of training images. All images will be resized to this size during preprocessing.
+    "bsize": 64,  # Batch size during training.
+    "img_size": 128,  # Spatial size of training images. All images will be resized to this size during preprocessing.
     "nc": 3,  # Number of channles in the training images. For coloured images this is 3.
     "nz": 128,  # Size of the Z latent vector (the input to the generator).
     # "ngf": 64,  # Size of feature maps in the generator. The depth will be multiples of this.
@@ -119,15 +119,15 @@ for epoch in range(1, params["nepochs"] + 1):
 
         if params["rel_avg_gan"]:
             # 1
-            gen_loss = (
-                adversarial_loss(real_pred - fake_pred.mean(0, keepdim=True), fake)
-                + adversarial_loss(fake_pred - real_pred.mean(0, keepdim=True), valid)
-            ) / 2
+            # gen_loss = (
+            #     adversarial_loss(real_pred - fake_pred.mean(0, keepdim=True), fake)
+            #     + adversarial_loss(fake_pred - real_pred.mean(0, keepdim=True), valid)
+            # ) / 2
 
             # 2
-            # gen_loss = adversarial_loss(
-            #     fake_pred - real_pred.mean(0, keepdim=True), valid
-            # )
+            gen_loss = adversarial_loss(
+                fake_pred - real_pred.mean(0, keepdim=True), valid
+            )
         else:
             gen_loss = adversarial_loss(fake_pred - real_pred, valid)
 

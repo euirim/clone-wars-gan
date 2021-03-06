@@ -13,13 +13,13 @@ class Generator(nn.Module):
         self.l1_conv = nn.Sequential(nn.BatchNorm2d(128), nn.Upsample(scale_factor=2),)
         self.c1 = nn.Sequential(
             nn.Conv2d(128, 128, 3, stride=1, padding=1),
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(128, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
         )
         self.c2 = nn.Sequential(
             nn.Upsample(scale_factor=2),
             nn.Conv2d(128, 64, 3, stride=1, padding=1),
-            nn.BatchNorm2d(64),
+            nn.BatchNorm2d(64, 0.8),
             nn.LeakyReLU(0.2, inplace=True),
         )
         self.c3 = nn.Sequential(
@@ -47,7 +47,7 @@ class Discriminator(nn.Module):
                 nn.Dropout2d(0.25),
             ]
             if bn:
-                block.append(nn.BatchNorm2d(out_filters))
+                block.append(nn.BatchNorm2d(out_filters, 0.8))
             return block
 
         self.model = nn.Sequential(
