@@ -135,3 +135,5 @@ data/*
 !*/logs/.gitkeep
 */model/*
 !*/model/.gitkeep
+*/outputs/*
+celeba.gif
