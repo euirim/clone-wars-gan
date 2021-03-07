@@ -22,8 +22,32 @@ conda activate clone-wars
 pre-commit install
 ```
 
-5. (Optional) Start the Jupyter notebook server. Make sure notebooks are saved in `project/notebooks`.
+## Data Retrieval
+
+The dataset contains copyrighted content so we cannot freely distribute it. Please contact us to obtain a private copy of this dataset.
+
+## Training Model
+
+1. Download dataset and place into `data/full` folder. This folder should contain another folder containing all images as its root.
+
+2. Be sure to activate the clone-wars conda environment as specified in the *Getting Started* section.
+
+3. Change directory into the model of your choice.
+
+4. Run the training script.
 
 ```bash
-make start_jupyter
+python train.py
 ```
+
+## Evaluating Model
+
+1. Be sure you have fully trained a model.
+
+2. Within the directory of the model of your choice (currently only rel_dcgan and ss_rel_dcgan), run the eval script.
+
+```bash
+python eval.py -n NUMBER_OF_IMAGES -d DEVICE MODEL_FILENAME
+```
+
+If the device flag is not specified, the model defaults to using GPU (if available). Type in "cpu" to use CPU.

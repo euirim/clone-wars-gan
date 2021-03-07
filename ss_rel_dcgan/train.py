@@ -1,11 +1,13 @@
 from tqdm import tqdm
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import torchvision.utils as vutils
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+
 from torch.utils.tensorboard import SummaryWriter
 
 from config import PARAMS as params
@@ -95,14 +97,44 @@ for epoch in range(1, params["nepochs"] + 1):
 
         disc.zero_grad()
         # Create labels for the real data. (label=1)
-        real_labels = torch.full((batch_size,), real_label, device=device).float()
-        fake_labels = torch.full((batch_size,), fake_label, device=device).float()
-        y_real = disc(real_imgs).view(-1)
+        real_labels = torch.full((batch_size * 4,), real_label, device=device).float()
+        fake_labels = torch.full((batch_size * 4,), fake_label, device=device).float()
+
+        # Rotate all of the real images by 0, 90, 180, and 270 degrees
+        x = real_imgs
+        x_90 = x.transpose(2, 3)
+        x_180 = x.flip(2, 3)
+        x_270 = x.transpose(2, 3).flip(2, 3)
+        real_imgs = torch.cat((x, x_90, x_180, x_270), 0)
 
         # Sample random data from a unit normal distribution.
         noise = torch.randn(batch_size, params["nz"], 1, 1, device=device)
         # Generate fake data (images).
         fake_imgs = gen(noise)
+
+        # Rotate all of the fake images by 0, 90, 180, and 270 degrees
+        x = fake_imgs
+        x_90 = x.transpose(2, 3)
+        x_180 = x.flip(2, 3)
+        x_270 = x.transpose(2, 3).flip(2, 3)
+        fake_imgs = torch.cat((x, x_90, x_180, x_270), 0)
+
+        y_real_logits, y_real_rots_logits = disc(real_imgs)
+        y_real_logits = y_real_logits.view(-1)
+        y_real_rots_logits = y_real_rots_logits.view(batch_size * 4, -1)
+
+        # Compute the one-hot rotational labels
+        rot_labels = torch.zeros(4 * batch_size, device=device)
+        for i in range(4 * batch_size):
+            if i < batch_size:
+                rot_labels[i] = 0
+            elif i < 2 * batch_size:
+                rot_labels[i] = 1
+            elif i < 3 * batch_size:
+                rot_labels[i] = 2
+            else:
+                rot_labels[i] = 3
+        rot_labels = F.one_hot(rot_labels.to(torch.int64), 4).float()
 
         # Calculate the output of the discriminator of the fake data.
         # As no gradients w.r.t. the generator parameters are to be
@@ -110,13 +142,40 @@ for epoch in range(1, params["nepochs"] + 1):
         # discriminator parameters will be calculated.
         # This is done because the loss functions for the discriminator
         # and the generator are slightly different.
-        y_fake = disc(fake_imgs.detach()).view(-1)
+        y_fake_logits, y_fake_rots_logits = disc(fake_imgs.detach())
+        y_fake_logits = y_fake_logits.view(-1)
+        y_fake_rots_logits = y_fake_rots_logits.view(-1)
 
-        # Net discriminator loss.
+        # Net discriminator relativistic loss.
         disc_loss = (
-            criterion(y_real - torch.mean(y_fake), real_labels)
-            + criterion(y_fake - torch.mean(y_real), fake_labels)
+            criterion(y_real_logits - torch.mean(y_fake_logits), real_labels)
+            + criterion(y_fake_logits - torch.mean(y_real_logits), fake_labels)
         ) / 2
+
+        # Compute gradient penalty and add this to the discriminator loss
+        # alpha = torch.rand(real_imgs.size(0), 1, 1, 1, device=device)
+        # alpha = alpha.expand_as(real_imgs)
+        # interpolated = Variable(alpha * real_imgs + (1 - alpha) * fake_imgs, requires_grad=True, device=device)
+        # interpolated_logits, _ = disc(interpolated)
+        # interpolated_probs = nn.Sigmoid(interpolated_logits)
+        # gradients = torch_grad(outputs=interpolated_probs, inputs=interpolated,
+        #                        grad_outputs=torch.ones(interpolated_probs.size(), device=device),
+        #                        create_graph=True, retain_graph=True)[0]
+        # gradients = gradients.view(real_imgs.size(0), -1)
+
+        # # TODO add these to tensorboard
+        # gradients.norm(2, dim=1).sum().data
+
+        # gradients_norm = torch.sqrt(torch.sum(gradients ** 2, dim=1) + 1e-12)
+        # disc_loss += params["gp_weight"] * ((gradients_norm - 1) ** 2).mean()
+
+        # Loss term for rotations
+        disc_loss += params["rot_weight_d"] * torch.sum(
+            F.binary_cross_entropy_with_logits(
+                input=y_real_rots_logits, target=rot_labels
+            )
+        )
+
         # Backprop
         disc_loss.backward()
         # Update discriminator parameters.
@@ -126,19 +185,34 @@ for epoch in range(1, params["nepochs"] + 1):
         # Train generator
         #################
 
-        # Make accumalted gradients of the generator zero.
+        # Make accumulated gradients of the generator zero.
         gen.zero_grad()
-        y_real = disc(real_imgs).view(-1)  # necessary to avoid gradient problems
-        y_fake = disc(fake_imgs).view(-1)
+
+        y_real_logits, y_real_rots_logits = disc(
+            real_imgs
+        )  # necessary to avoid gradient problems
+        y_real_logits = y_real_logits.view(-1)
+        y_real_rots_logits = y_real_rots_logits.view(batch_size * 4, -1)
+        y_fake_logits, y_fake_rots_logits = disc(fake_imgs)
+        y_fake_logits = y_fake_logits.view(-1)
+        y_fake_rots_logits = y_fake_rots_logits.view(batch_size * 4, -1)
+
         gen_loss = (
-            criterion(y_real - torch.mean(y_fake), fake_labels)
-            + criterion(y_fake - torch.mean(y_real), real_labels)
+            criterion(y_real_logits - torch.mean(y_fake_logits), fake_labels)
+            + criterion(y_fake_logits - torch.mean(y_real_logits), real_labels)
         ) / 2
         # Gradients for backpropagation are calculated.
         # Gradients w.r.t. both the generator and the discriminator
         # parameters are calculated, however, the generator's optimizer
         # will only update the parameters of the generator. The discriminator
         # gradients will be set to zero in the next iteration by netD.zero_grad()
+
+        gen_loss += params["rot_weight_g"] * torch.sum(
+            F.binary_cross_entropy_with_logits(
+                input=y_fake_rots_logits, target=rot_labels
+            )
+        )
+
         gen_loss.backward()
         gen_opt.step()
 

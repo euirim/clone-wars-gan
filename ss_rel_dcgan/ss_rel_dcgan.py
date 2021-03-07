@@ -81,10 +81,19 @@ class Discriminator(nn.Module):
             nn.BatchNorm2d(params["ndf"] * 16),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (params["ndf"]*16) x 4 x 4
-            nn.Conv2d(params["ndf"] * 16, 1, 4, stride=1, padding=0, bias=False),
+            # nn.Conv2d(params["ndf"] * 16, 1, 4, stride=1, padding=0, bias=False),
             # nn.Sigmoid(),
             # state size. 1
         )
+        self.gan_conv = nn.Conv2d(
+            params["ndf"] * 16, 1, 4, stride=1, padding=0, bias=False
+        )
+        self.rot_conv = nn.Conv2d(
+            params["ndf"] * 16, 4, 4, stride=1, padding=0, bias=False
+        )
 
     def forward(self, img):
-        return self.main(img)
+        out = self.main(img)
+        gan_logits = self.gan_conv(out)  # batch_size x 1 x 1 x 1
+        rot_logits = self.rot_conv(out)  # batch_size x 4 x 1 x 1
+        return gan_logits, rot_logits
