@@ -17,6 +17,7 @@ PARAMS = {
     "rel_avg_gan": True,  # Use a relativistic average GAN instead of a standard GAN
     "save_epoch": 2,
     "num_dataloader_workers": os.cpu_count() // 2,
+    "nrots": 4,
 }  # Save step.
 
 # Set random seed for reproducibility.
