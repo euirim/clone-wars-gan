@@ -1,5 +1,15 @@
 # CS236G Final Project: Clone Wars GAN
 
+## Models
+
+1. `dcgan`: Popular DCGAN model with 64x64 output.
+
+2. `rel_dcgan`: DCGAN model with additional layers for 128x128 output and relativistic discriminator.
+
+3. `ss_rel_dcgan`: `rel_dcgan` with self-supervision.
+
+4. `ss_rel_gan_improved`: `ss_rel_dcgan` with spectral normalization and less frequent generator training.
+
 ## Getting Started
 
 1. Install [conda](https://docs.conda.io/en/latest/) if you don't have it on your machine, ideally by installing [Anaconda](https://www.anaconda.com/).
