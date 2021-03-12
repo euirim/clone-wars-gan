@@ -14,7 +14,7 @@ from config import PARAMS as params
 from config import DEVICE as device
 
 from utils import get_dataloader
-from ss_rel_dcgan_improved import Generator, Discriminator
+from ss_rel_resgan import Generator, Discriminator
 
 
 # Custom weight initialization
