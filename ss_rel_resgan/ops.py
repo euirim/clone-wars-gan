@@ -10,6 +10,7 @@ class ResidualG(nn.Module):
         self.relu = nn.ReLU()
         self.batch_norm1 = nn.BatchNorm2d(in_channels)
         self.batch_norm2 = nn.BatchNorm2d(out_channels)
+        self.upsample = nn.Upsample(scale_factor=2, mode="nearest")
         self.conv1 = nn.Conv2d(
             in_channels, out_channels, kernel_size, stride, padding=1
         )
@@ -20,10 +21,11 @@ class ResidualG(nn.Module):
     def forward(self, x):
         inpt = x
         x = self.relu(self.batch_norm1(x))
+        x = self.upsample(x)
         x = self.conv1(x)
         x = self.batch_norm2(x)
         x = self.conv2(self.relu(x))
-        return inpt + x
+        return self.upsample(inpt) + x
 
 
 class ResidualD(nn.Module):
@@ -31,9 +33,8 @@ class ResidualD(nn.Module):
         super(ResidualD, self).__init__()
         self.is_start = is_start
 
-        self.avgpool_short = nn.AvgPool2d(2, 2, padding=1)
         self.conv_short = nn.utils.spectral_norm(
-            nn.Conv2d(in_channels, out_channels, 1, stride=1, padding=0)
+            nn.Conv2d(in_channels, out_channels, 4, stride=2, padding=1)
         )
         self.conv1 = nn.utils.spectral_norm(
             nn.Conv2d(in_channels, out_channels, kernel, stride=stride, padding=1)
@@ -41,7 +42,6 @@ class ResidualD(nn.Module):
         self.conv2 = nn.utils.spectral_norm(
             nn.Conv2d(out_channels, out_channels, kernel, stride=stride, padding=1)
         )
-        self.avgpool2 = nn.AvgPool2d(2, 2, padding=1)
         self.relu = nn.ReLU()
 
     def forward(self, x):

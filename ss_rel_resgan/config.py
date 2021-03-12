@@ -10,7 +10,7 @@ PARAMS = {
     "nz": 100,  # Size of the Z latent vector (the input to the generator).
     "ngf": 64,  # Size of feature maps in the generator. The depth will be multiples of this.
     "ndf": 64,  # Size of features maps in the discriminator. The depth will be multiples of this.
-    "nepochs": 15,  # Number of training epochs.
+    "nepochs": 1,  # Number of training epochs.
     "dlr": 0.0004,  # Learning rate for discriminator
     "glr": 0.0001,  # Learning rate for generator
     "beta1": 0.5,  # Beta1 hyperparam for Adam optimizer
