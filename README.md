@@ -61,3 +61,6 @@ python eval.py -n NUMBER_OF_IMAGES -d DEVICE MODEL_FILENAME
 ```
 
 If the device flag is not specified, the model defaults to using GPU (if available). Type in "cpu" to use CPU.
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
