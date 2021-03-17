@@ -10,6 +10,8 @@
 
 4. `ss_rel_gan_improved`: `ss_rel_dcgan` with spectral normalization and less frequent generator training.
 
+5. `ss_rel_resgan`: `ss_rel_gan_improved` with residual blocks.
+
 ## Getting Started
 
 1. Install [conda](https://docs.conda.io/en/latest/) if you don't have it on your machine, ideally by installing [Anaconda](https://www.anaconda.com/).
